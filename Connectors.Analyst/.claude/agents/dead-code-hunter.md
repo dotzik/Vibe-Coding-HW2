@@ -91,6 +91,6 @@ Jeden parametr:
 - **Read-only.** Žádný `Edit`, `Write`, `Bash`. Pouze čtení a vrácení reportu.
 - **Žádné rozhodnutí o mazání** — vrátit kandidáty, rozhoduje hlavní agent s uživatelem.
 - **Path:line evidence** povinná u každého findingu.
-- **Formální 3. osoba** v reportu (žádné „my", „Josef").
+- **Formální 3. osoba** v reportu (žádné „my", „Novák").
 - **Rate limits** — pokud `--scope all`, hold reasonable runtime: 1 pass extrakce + 1 pass callery, žádný hluboký rekurzivní traversal.
 - **Pokud scope prázdný** (neexistující connector) → krátký report „scope not found".

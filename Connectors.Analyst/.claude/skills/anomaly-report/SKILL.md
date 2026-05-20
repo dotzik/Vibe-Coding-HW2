@@ -48,7 +48,7 @@ Aktivace: `/anomaly-report <connector> [...args]` nebo automaticky při ⚠️/a
 **Zdroj nálezu:** <bug-hunter | manual | …>
 
 **Popis:**
-<2-5 vět, 3. osoba pasivní rod, žádné „my"/„Josef"/„tým".>
+<2-5 vět, 3. osoba pasivní rod, žádné „my"/„Novák"/„tým".>
 
 **Místo v kódu / DB:**
 - `path/to/File.cs:42`
@@ -78,7 +78,7 @@ Aktivace: `/anomaly-report <connector> [...args]` nebo automaticky při ⚠️/a
 
 ## Pravidla obsahu
 
-- **Formální 3. osoba, pasivní rod** — [`feedback_no_personification`](../../memory/feedback_no_personification.md). Žádné „myslíme", „Josef zjistil", „při analýze jsme našli". Místo toho „Při statické analýze byl identifikován…".
+- **Formální 3. osoba, pasivní rod** — [`feedback_no_personification`](../../memory/feedback_no_personification.md). Žádné „myslíme", „Novák zjistil", „při analýze jsme našli". Místo toho „Při statické analýze byl identifikován…".
 - **Path:line evidence povinná** — bez ní entry neuvádět.
 - **Hypotézy explicitně označit** jako hypotézy, ne fakta („pravděpodobně copy-paste chyba", ne „je to copy-paste chyba").
 - **Severity mapování** z hunter reportů:

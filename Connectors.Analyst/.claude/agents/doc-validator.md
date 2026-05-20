@@ -67,7 +67,7 @@ Pokud doc soubor **chybí**, vypiš ho v sekci **Missing in docs** s návrhem š
 
 - **Read-only.** Žádný `Edit`, `Write`, `Bash`. Pouze čtení a vrácení reportu.
 - **Žádné rozhodování o zápisu** — to dělá hlavní agent s uživatelem přes `/upgrade-docs`.
-- **Formální 3. osoba** v textu reportu (viz `[[no-personification-in-docs]]`). Žádné „my", „Josef", „během analýzy zjišťujeme".
+- **Formální 3. osoba** v textu reportu (viz `[[no-personification-in-docs]]`). Žádné „my", „Novák", „během analýzy zjišťujeme".
 - **Path:line evidence** povinná u každého findingu — bez ní finding neuvádět.
 - **Pokud chybí celá `docs/` složka** → vrátit krátký report „connector bez docs" s návrhem spustit `/onboard-connector` (Phase 4).
 - **Rate limits** — pokud volaný z `/cross-consistency-check` paralelně 7×, drž runtime krátký: stačí 1× full pass, ne iterativní deep-dive.
