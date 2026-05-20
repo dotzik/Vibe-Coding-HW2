@@ -1,0 +1,70 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Content *)",
+      "WebSearch",
+      "mcp__connectors__search_files",
+      "Bash(grep -i *)",
+      "Bash(dotnet run --no-build -- find-objects *)",
+      "Bash(dotnet run --no-build -- dump-procedures *)",
+      "Bash(dotnet run --no-build -- dump-tables *)",
+      "Bash(dotnet run --no-build -- snapshot *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet run --project tests *)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "connectors",
+    "libs",
+    "profile",
+    "fetch",
+    "jira"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "pwsh -NoProfile -Command \"& '.claude/hooks/track-cs-edit.ps1'\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__jira__jira_add_worklog",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "pwsh -NoProfile -Command \"& '.claude/hooks/validate-worklog.ps1'\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "pwsh -NoProfile -Command \"& '.claude/hooks/docs-sync-prompt.ps1'\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "pwsh -NoProfile -File tools/statusline.ps1"
+  }
+}

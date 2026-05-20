@@ -1,0 +1,44 @@
+# Local overrides
+.mcp.json.local
+**/.claude/settings.local.json
+**/.claude/hooks/.last-session-edits
+
+# Obsidian vault / trash
+.obsidian/
+.trash/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Secrets & logs
+.env
+.env.local
+*.log
+logs/
+**/logs/
+
+# Node
+node_modules/
+
+# .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+
+# Scratch / tmp / dumps
+**/_scratch/
+**/scratch/
+tmp/
+**/tmp/
+*.dump
+*.tmp.md

@@ -1,0 +1,130 @@
+# {{ConnectorName}} — Database Model
+
+> Šablona pro **kompletní DB model**. Generovat ze snapshotu `DbIntrospect snapshot`. Žádný connector dnes nemá ekvivalent.
+> **Snapshot date:** {{YYYY-MM-DD}}
+> **Generováno z:** `pwsh tools/dbintrospect.ps1 -Mode snapshot -Database {{DB}}`
+
+## 1. Přehled DB
+
+| DB | Role | Sdílená s connectory |
+|---|---|---|
+| `{{DB1}}` | {{master entity}} | {{ARES, RPV, ...}} |
+| `{{DB2}}` | {{raw payload}} | {{ARES, SbirkaListin}} |
+
+## 2. ER diagramy
+
+### 2.1 `[{{DB1}}]`
+
+```mermaid
+erDiagram
+    {{Kompletní ER, všechny tabulky pod kontrolou tohoto connectoru}}
+```
+
+### 2.2 `[{{DB2}}]`
+
+```mermaid
+erDiagram
+    {{...}}
+```
+
+## 3. Tabulky
+
+> Pro každou tabulku: účel, sloupce s typy, PK, FK, indexy. Generováno z DDL snapshotu.
+
+### `[{{DB1}}].[dbo].[{{tab1}}]`
+
+**Účel:** {{Master entita subjektu}}
+
+**Sloupce:**
+| Sloupec | Typ | NULL | Default | Poznámka |
+|---|---|---|---|---|
+| `id_subject` | `INT IDENTITY` | NE | — | PK |
+| `ic` | `NVARCHAR(20)` | NE | — | UNIQUE |
+| `dic` | `NVARCHAR(20)` | ANO | — | |
+| `last_check` | `DATETIME` | ANO | — | Poslední dotyk connectorem |
+| `vlozeno` | `DATETIME` | NE | `GETDATE()` | |
+
+**PK:** `id_subject`
+**Indexy:**
+| Index | Sloupce | Typ |
+|---|---|---|
+| `PK_subjects` | `id_subject` | CLUSTERED |
+| `UX_subjects_ic` | `ic` | UNIQUE NONCLUSTERED |
+| `IX_subjects_last_check` | `last_check` | NONCLUSTERED |
+
+**FK:** {{seznam}}
+**Triggery:** {{seznam, případně "žádné"}}
+
+### `[{{DB1}}].[dbo].[{{tab2}}]`
+{{...}}
+
+## 4. Stored Procedures
+
+> Kompletní výčet SP v rozsahu connectoru. Generováno z `sys.sql_modules`.
+
+| SP | IN parametry | OUT parametry | Mutované tabulky | Volá interně (callees) |
+|---|---|---|---|---|
+| `{{sp_CreateSubject}}` | `@ic NVARCHAR(20)` | `@id_subject INT` | `subjects` | `appEntity_INSERT_*` |
+| `{{sp_SaveDocument}}` | `@id_subject INT, @hash VARBINARY(32), @payload VARBINARY(MAX)` | — | `Documents` | — |
+| {{...}} | {{...}} | {{...}} | {{...}} | {{...}} |
+
+## 5. Skalární a tabulkové funkce
+
+| Funkce | Typ | Vstup | Výstup | Použití |
+|---|---|---|---|---|
+| `{{fn_GetActiveAddress}}` | scalar | `@id_subject INT` | `NVARCHAR(MAX)` | Konkatenace aktivní adresy |
+| `{{tvf_GetSubjectHistory}}` | table-valued | `@id_subject INT` | `TABLE` | Historie změn |
+
+## 6. Triggery
+
+| Trigger | Tabulka | Event | Účel |
+|---|---|---|---|
+| `{{tr_subjects_audit}}` | `subjects` | AFTER UPDATE | Insert do `subjects_audit` |
+
+> ⚠️ **Anti-pattern:** cross-DB triggery (vzor: SK.NespolehlivyPlatce `BussInfo` archivace). Pokud existují, dokumentovat zde + flag v `anomalies.md`.
+
+## 7. Enumerace a číselníky
+
+### `task_state` (z tabulky `tasks.state`)
+| Hodnota | Konstanta | Význam |
+|---|---|---|
+| 0 | NEW | Vytvořen, čeká na zpracování |
+| 1 | DOWNLOADING | Probíhá download |
+| ... | ... | ... |
+
+### `zdrojeDat`
+| ID | Zdroj | Connector |
+|---|---|---|
+| 1 | ARES ES | `Connector.Ares.API.Downloader.EkonomickeSubjekty` |
+| 2 | ARES VR | `Connector.Ares.API.Downloader.VR` |
+| {{...}} | {{...}} | {{...}} |
+
+## 8. Cross-DB reference
+
+| Z | Do | Mechanismus | FK constraint? |
+|---|---|---|---|
+| `[{{DB2}}].[dbo].[Documents].id_subject_appdb` | `[{{DB1}}].[dbo].[subjects].id_subject` | logická reference | ❌ ne (cross-DB) |
+
+## 9. Zdroj snapshotu
+
+```
+Snapshot date:    {{YYYY-MM-DD HH:MM}}
+Server:           {{HOST\INSTANCE}}
+DB collation:     {{Czech_CI_AS}}
+SQL Server ver:   {{2019 / 2022}}
+Generováno:       DbIntrospect v{{X.Y.Z}}
+Output adresář:   ./snapshots/{{YYYY-MM-DD}}/
+Diff vs. minulý:  {{žádné změny / N nových sloupců, M nových indexů}}
+```
+
+## 10. Workflow regenerace
+
+```bash
+# 1. Snapshot DB
+pwsh tools/dbintrospect.ps1 -Mode snapshot -Database {{DB1}}
+
+# 2. Diff vs. minulý snapshot — porovnat výstup s předchozím snapshotem
+
+# 3. Regenerace tohoto dokumentu
+# (manuálně doplnit enum významy a cross-DB poznámky — CLI je nezná)
+```

@@ -1,0 +1,149 @@
+# {{ConnectorName}} — Analýza
+
+> Šablona. Sekce s `{{...}}` vyplnit. Sekce, které nedávají smysl pro tento connector, smazat (s poznámkou proč).
+
+## 1. Účel
+
+{{Co connector dělá, jaký byznys problém řeší. 2-3 věty.}}
+
+**Zdroj dat:** {{URL/název registru}}
+**Cílové DB:** `[{{DB1}}]`, `[{{DB2}}]`
+**Frekvence běhu:** {{denně / hodinově / event-driven}}
+
+## 2. Technologie
+
+| Vrstva | Technologie | Verze |
+|---|---|---|
+| Runtime | .NET | {{8.0}} |
+| Bázová třída | `BaseConnector` | {{1.2.x}} |
+| DB přístup | `DBManager` + raw ADO.NET + SP | {{2.2.x}} |
+| HTTP klient | {{HttpClient / RestSharp}} | — |
+| Parser | {{XmlReader / HtmlAgilityPack / iTextSharp}} | {{verze}} |
+| Konfigurace | `Microsoft.Extensions.Configuration` | {{9.0.x}} |
+| Pomocné | `CoreFramework` (proxy, logger), `Rating`, `Messaging` | {{2.4.x, 1.0, 1.1}} |
+
+## 3. Konfigurace (`appsettings.json`)
+
+```json
+{
+  "ConnectionStrings": {
+    "{{DB1}}": "Server=...;Database={{DB1}};...",
+    "{{DB2}}": "..."
+  },
+  "{{ConnectorName}}": {
+    "BatchSize": 1000,
+    "MaxRetries": 3,
+    "TimeoutSec": 30
+  }
+}
+```
+
+| Klíč | Význam | Default |
+|---|---|---|
+| `BatchSize` | Velikost dávky pro bulk operace | 1000 |
+| `MaxRetries` | Max počet pokusů per task | 3 |
+| `TimeoutSec` | HTTP timeout | 30 |
+
+## 4. Architektura
+
+> Pokud byl connector významně refaktorován, **uchovej oba diagramy** vedle sebe (dual-view). Vzor: SK.Dluhy CONN-200.
+
+### Aktuální architektura
+
+```mermaid
+graph TD
+    Main[{{ConnectorName}}<br/>Run()]
+    Parser[{{Parser třída}}]
+    DA[{{DataAccess}}]
+    API[{{Externí API}}]
+    DB1[({{DB1}})]
+
+    Main --> Parser
+    Main --> DA
+    Parser --> API
+    DA --> DB1
+```
+
+### Architektura — původní (před {{CONN-NNN}}) — pokud refactor proběhl
+
+```mermaid
+graph TD
+    {{Diagram původní architektury}}
+```
+
+### Co se změnilo
+
+| Aspekt | Před | Po |
+|---|---|---|
+| {{Aspekt 1}} | {{...}} | {{...}} |
+
+## 5. Datové objekty
+
+```mermaid
+classDiagram
+    class {{Document}} {
+        +int Id
+        +string Ic
+        +DateTime DownloadedAt
+        +byte[] PayloadHash
+        +Status Status
+    }
+    class {{TaskRecord}} {
+        +int Id
+        +string Ic
+        +TaskState State
+        +DateTime CreatedAt
+    }
+    {{Document}} --> {{TaskRecord}} : 1..1
+```
+
+## 6. DataAccess vrstva
+
+```mermaid
+classDiagram
+    class {{XDataAccess}} {
+        +DataSet GetPendingTasks()
+        +int CreateSubject(string ic)
+        +void UpdateAddress(int idSubject, ...)
+        +void SetTaskStatus(int taskId, TaskState state)
+    }
+    {{XDataAccess}} --> DBManager : uses
+```
+
+## 7. Enumerace
+
+### {{TaskState}}
+| Hodnota | Konstanta | Význam |
+|---|---|---|
+| 0 | NEW | Vytvořen, čeká na zpracování |
+| 1 | DOWNLOADING | Probíhá download |
+| 2 | DOWNLOADED | Stažen, čeká na parse |
+| 3 | PARSED | Parsován, čeká na save |
+| 4 | SAVED | Uložen do DB |
+| 5 | DONE | Kompletní |
+| 9 | FAILED | Chyba, retry |
+| 99 | DEAD | Limit retry překročen |
+
+### {{DocumentStatus}}
+| Hodnota | Význam |
+|---|---|
+| {{...}} | {{...}} |
+
+## 8. Globální lookup / číselníky
+
+| Tabulka | Účel | Příklady hodnot |
+|---|---|---|
+| `zdrojeDat` | Mapa zdroje na ID | 1=ARES ES, 2=ARES VR |
+
+## 9. Anomálie
+
+Viz [`anomalies.md`](./anomalies.md) pro centralizovaný registr ⚠️.
+
+## 10. Reference
+
+| Co | Cesta |
+|---|---|
+| Hlavní třída | `src/.../{{Connector.cs}}` |
+| Parser | `src/.../{{Parser.cs}}` |
+| DataAccess | `src/.../DataAccess/{{XDA.cs}}` |
+| Konfigurace | `src/.../appsettings.json` |

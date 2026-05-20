@@ -1,0 +1,23 @@
+## Symptomy
+[Co se děje, error message, kdy se to projevilo, frekvence.]
+
+## Možné příčiny
+1. **[Příčina A]** — pravděpodobnost: VYSOKÁ. Důvod: [proč]
+2. **[Příčina B]** — pravděpodobnost: STŘEDNÍ. Důvod: …
+3. **[Příčina C]** — pravděpodobnost: NÍZKÁ. Důvod: …
+
+## Diagnostické kroky
+```sql
+-- Krok 1: ověř existenci objektu
+SELECT * FROM sys.objects WHERE name = 'subjects';
+```
+
+```bash
+# Krok 2: spusť CLI introspekci
+pwsh tools/dbintrospect.ps1 -Mode find-objects -Database AppDb -Like subjects_%
+```
+
+## Doporučený postup
+1. [Akce 1 — bezpečná, reverzibilní]
+2. [Akce 2 — pokud 1 nepomohla]
+3. [Eskalace — kdy přestat zkoušet sám a zavolat seniora / vlastníka]

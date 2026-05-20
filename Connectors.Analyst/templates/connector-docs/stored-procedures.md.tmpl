@@ -1,0 +1,123 @@
+# {{ConnectorName}} — Stored Procedures
+
+> Šablona. Vyplň sekce. Pokud connector volá pouze 1 DB, smaž sekce s 2. DB.
+
+## 1. Topologie databází
+
+| DB | Schema | Role | Tabulky pod kontrolou tohoto connectoru |
+|---|---|---|---|
+| `{{DB1}}` | `dbo` | {{master entity}} | `{{tab1}}`, `{{tab2}}` |
+| `{{DB2}}` | `dbo` | {{raw payload storage}} | `{{Documents}}` |
+
+## 2. Přehled stored procedures
+
+| SP | Třída.Metoda | Cíl DB | Účel | Volá interně |
+|---|---|---|---|---|
+| `{{sp_GetPendingTasks}}` | `{{XDA}}.GetPendingTasks()` | `{{DB1}}` | Vrací nezpracované tasky | — |
+| `{{sp_CreateSubject}}` | `{{XDA}}.CreateSubject(ic)` | `{{DB1}}` | INSERT subjects + return id | `{{appEntity_*}}` |
+| `{{sp_SaveDocument}}` | `{{XDA}}.SaveDocument(doc)` | `{{DB2}}` | INSERT raw XML + status | — |
+| `{{sp_SetTaskStatus}}` | `{{XDA}}.SetTaskStatus(...)` | `{{DB1}}` | UPDATE tasks SET state | — |
+
+## 3. ER diagramy
+
+> **Pravidlo:** každá DB má vlastní ER diagram. Cross-DB FK se zmiňuje v textu, ne v diagramu (mermaid `erDiagram` to neumí čistě).
+
+### 3.1 `[{{DB1}}]`
+
+```mermaid
+erDiagram
+    SUBJECTS ||--o{ SUBJECTS_ADRESY : ma
+    SUBJECTS ||--o{ SUBJECTS_NAZVY : ma
+    SUBJECTS ||--o{ TASKS : "queue per subject"
+    SUBJECTS {
+        int id_subject PK
+        nvarchar ic UK
+        nvarchar dic
+        datetime last_check
+    }
+    SUBJECTS_ADRESY {
+        int id_adresa PK
+        int id_subject FK
+        nvarchar ulice
+        datetime datum_od
+        datetime datum_do "NULL = aktivní"
+    }
+    SUBJECTS_NAZVY {
+        int id_nazev PK
+        int id_subject FK
+        nvarchar nazev
+        datetime datum_od
+        datetime datum_do
+    }
+    TASKS {
+        int id_task PK
+        nvarchar ic
+        int state
+        datetime created_at
+    }
+```
+
+### 3.2 `[{{DB2}}]`
+
+```mermaid
+erDiagram
+    DOCUMENTS {
+        int id_document PK
+        int id_subject_appdb "FK do {{DB1}}.subjects (bez DB constraint)"
+        varbinary hash_payload UK
+        varbinary payload_zip
+        int status
+        datetime inserted
+    }
+```
+
+**Cross-DB poznámka:** `[{{DB2}}].[dbo].[Documents].id_subject_appdb` referencuje `[{{DB1}}].[dbo].[subjects].id_subject` — bez FK constraint, integrita zajištěna v aplikaci.
+
+## 4. Parametry SP (detail)
+
+### `{{sp_CreateSubject}}`
+
+| Parametr | Typ | Direction | Význam |
+|---|---|---|---|
+| `@ic` | `NVARCHAR(20)` | IN | IČ subjektu |
+| `@id_subject` | `INT` | OUT | Vrácený nový PK |
+
+**SQL:**
+```sql
+CREATE PROCEDURE {{sp_CreateSubject}}
+    @ic NVARCHAR(20),
+    @id_subject INT OUTPUT
+AS
+BEGIN
+    INSERT INTO subjects (ic, vlozeno) VALUES (@ic, GETDATE());
+    SET @id_subject = SCOPE_IDENTITY();
+END
+```
+
+### `{{sp_SetTaskStatus}}`
+{{...}}
+
+## 5. Inline SQL dotazy (mimo SP)
+
+> Pokud connector používá inline SQL (např. SELECT pro lookup), zaznamenat sem. Důvod: některé inline dotazy jsou kandidáti na povýšení do SP (sjednocení, parametrizace).
+
+| Místo | Účel | SQL | Doporučení |
+|---|---|---|---|
+| `XDA.cs:142` | Lookup ID subjektu podle IČ | `SELECT id_subject FROM subjects WHERE ic = @ic` | OK, parametrizováno |
+
+## 6. Anomálie a special cases
+
+> Detail v [`anomalies.md`](./anomalies.md). Zde jen přehled relevantní pro SP.
+
+| ID | Co | Místo |
+|---|---|---|
+| {{[CONN-NNN]}} | {{`sp_xy` updatuje špatnou tabulku}} | {{`sp_xy` v DB / `XDA.cs:NN`}} |
+
+## 7. Snapshot DDL
+
+DDL všech zmíněných SP a tabulek je v `database-model.md`. Pro regeneraci snapshotu:
+
+```bash
+pwsh tools/dbintrospect.ps1 -Mode snapshot -Database {{DB1}}
+pwsh tools/dbintrospect.ps1 -Mode snapshot -Database {{DB2}}
+```

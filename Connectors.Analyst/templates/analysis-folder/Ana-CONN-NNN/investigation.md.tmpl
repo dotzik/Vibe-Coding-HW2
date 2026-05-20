@@ -1,0 +1,49 @@
+# {{[CONN-NNN]}} — Investigation
+
+> Per-ticket složka pro hluboké analýzy, ad-hoc skripty a snapshoty. Vzor: `Connector.CZ.RejstrikPravnichOsob/Docs/Ana-CONN-229/`.
+
+## Kontext ticketu
+
+**ID:** {{[CONN-NNN]}}
+**Title:** {{Krátký popis problému/úkolu}}
+**Reportér:** {{kdo / kdy}}
+**Vlastník investigation:** {{kdo}}
+**Datum zahájení:** {{YYYY-MM-DD}}
+
+## Problém / hypotéza
+
+{{Co se děje, co je podezřelé. 2-3 věty.}}
+
+## Co jsem prozkoumal
+
+| Krok | Co | Výsledek |
+|---|---|---|
+| 1 | {{Spuštění SQL S1 (sanity check)}} | {{N řádků v tabulce X}} |
+| 2 | {{Spuštění Python 01_xml_basic_stats.py}} | {{Histogram délek XML elementů}} |
+| 3 | {{Diff snapshotu DB před/po běhu}} | {{Sloupec Y se měnil neočekávaně}} |
+
+## Závěr
+
+{{Co je root cause. Co je doporučené řešení (krátkodobé + dlouhodobé).}}
+
+## Akční položky
+
+- [ ] {{Akce 1 — ticket / PR}}
+- [ ] {{Update `anomalies.md` se záznamem `[CONN-NNN]`}}
+- [ ] {{Pokud je to systémové: update `domains/` modulu profilu}}
+
+## Reprodukovatelné artefakty
+
+- [`DbScripts/`](./DbScripts/) — SQL dotazy použité při analýze
+- [`XmlScripts/`](./XmlScripts/) — Python skripty pro analýzu XML/JSON
+- [`XmlSources/`](./XmlSources/) — vstupní vzorky (commitnuté, pokud nejsou citlivé)
+
+## Časová osa
+
+| Datum | Co se stalo |
+|---|---|
+| {{YYYY-MM-DD}} | Investigation zahájena |
+| {{YYYY-MM-DD}} | Hypotéza A vyvrácena (viz krok 2) |
+| {{YYYY-MM-DD}} | Root cause identifikován |
+| {{YYYY-MM-DD}} | PR #N otevřen |
+| {{YYYY-MM-DD}} | Merged, ticket uzavřen |

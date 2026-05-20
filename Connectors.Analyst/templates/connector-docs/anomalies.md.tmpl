@@ -1,0 +1,120 @@
+# {{ConnectorName}} — Anomálie ⚠️
+
+> Centralizovaný registr známých anomálií, bugů a tech-debtu. Doplňuje (nenahrazuje) ⚠️ inline poznámky v `analysis.md` / `flow.md` / `stored-procedures.md`.
+
+## Přehled
+
+| ID | Závažnost | Popis | Místo | Status | Aktualizováno |
+|---|---|---|---|---|---|
+| `{{[CONN-XXX]}}` | 🟠 VYSOKÁ | {{`SetStatus` updatuje špatnou tabulku}} | {{`SP/SetStatus.sql:42` + `XDA.cs:128`}} | open | {{2026-04-27}} |
+| `{{[CONN-YYY]}}` | 🟡 STŘEDNÍ | {{nepoužité parametry SP}} | {{`SP_xy.sql:N`}} | triaged | {{2026-04-27}} |
+
+**Legenda závažnosti:**
+- 🔴 KRITICKÁ — ztráta dat, bezpečnostní díra, blokuje produkci
+- 🟠 VYSOKÁ — špatná data, recoverable
+- 🟡 STŘEDNÍ — inefficiency, dluh
+- 🟢 NÍZKÁ — cosmetic
+
+**Legenda statusu:**
+- `open` — známá, neřešená
+- `triaged` — rozhodnutí o řešení existuje, čeká na implementaci
+- `in-progress` — řeší se (uvést kdo/kdy)
+- `fixed` — vyřešeno (uvést PR/commit)
+- `wont-fix` — vědomě ponecháno (uvést proč)
+
+---
+
+## Detail
+
+### `[CONN-XXX]` — {{SetStatus updatuje špatnou tabulku}}
+
+**Závažnost:** 🟠 VYSOKÁ
+**Status:** open
+**Aktualizováno:** {{2026-04-27}}
+**Vlastník:** {{vlastník / nepřiřazeno}}
+
+**Popis:**
+{{SP `skFinRed_Documents_SetStatus` má v těle UPDATE proti tabulce `AppDb_SK_Dluhy.dbo.Dluhy` namísto očekávané `AppDb_SK_Documents.dbo.Documents`. Pravděpodobně copy-paste chyba při refactoru CONN-NNN.}}
+
+**Místo v kódu / DB:**
+- SP: `[AppDb_SK].[dbo].[skFinRed_Documents_SetStatus]:row 42`
+- Volání: `Connector.SK.FinRed.NespolehlivyPlatce/src/.../DataAccess/SkFinRedDA.cs:128`
+
+**Dopad:**
+{{Status dokumentu se neukládá do správné tabulky → workflow stavů `Documents` je nekonzistentní → connector může opakovaně zpracovávat dokumenty, které byly úspěšně uloženy. Recoverable: ručním UPDATE Documents.status z join na Dluhy.status.}}
+
+**Reprodukce:**
+```sql
+-- Spuštění connectoru, následně:
+SELECT TOP 10 d.id_document, d.status AS docs_status, dl.status AS dluhy_status
+FROM AppDb_SK_Documents.dbo.Documents d
+LEFT JOIN AppDb_SK_Dluhy.dbo.Dluhy dl ON dl.id_document = d.id_document
+WHERE d.status <> dl.status;
+-- Očekáváno: 0 řádků. Reálně: N řádků.
+```
+
+**Navržené řešení:**
+1. **Krátkodobě** (oprava SP): změnit `UPDATE AppDb_SK_Dluhy.dbo.Dluhy` → `UPDATE AppDb_SK_Documents.dbo.Documents` v SP, redeploy.
+2. **Backfill**: jednorázový skript `UPDATE AppDb_SK_Documents.dbo.Documents SET status = ... FROM AppDb_SK_Dluhy.dbo.Dluhy ...` pro nápravu existujících dat.
+3. **Prevence**: přidat unit test (DbUp / SqlTest) ověřující cílovou tabulku SP.
+
+**Související tickety:**
+- {{CONN-XXX (Jira), GitHub Issue #N}}
+
+---
+
+### `[CONN-YYY]` — {{Nepoužité parametry SP}}
+
+**Závažnost:** 🟡 STŘEDNÍ
+**Status:** triaged
+**Aktualizováno:** {{2026-04-27}}
+
+**Popis:**
+{{SP `MainDB_SetDatumDo` má parametry `@param1 INT`, `@param2 NVARCHAR(50)`, ale tělo SP je nepoužívá (zřejmě legacy z dřívější verze).}}
+
+**Dopad:** žádný funkční, ale matoucí pro maintainery.
+
+**Navržené řešení:** odstranit parametry z signatur SP + odpovídající `Dictionary` keys v `XDA.cs`. Bump verze SP.
+
+**Status pozn.:** triaged jako „součást příštího clean-upu CONN-ZZZ".
+
+---
+
+### `[CONN-ZZZ]` — {{SQL injection v query buildingu}}
+
+**Závažnost:** 🔴 KRITICKÁ
+**Status:** in-progress (vlastník: {{...}}, deadline: {{YYYY-MM-DD}})
+
+**Popis:**
+{{`Connector.CZ.SbirkaListin_Archiv/src/.../Parser.cs:142` skládá SQL string konkatenací s hodnotou z parsovaného HTML.}}
+
+**Místo v kódu:**
+```csharp
+// Parser.cs:142 — ⚠️ injection surface
+var sql = "SELECT * FROM sl_archiv WHERE ic = '" + parsedIc + "'";
+db.da.ExecuteSQL(sql);
+```
+
+**Dopad:** Pokud zdrojový HTML obsahuje speciální znaky (apostrof, `;`, `--`), může dojít k injekci do produkční DB. Vzhledem k tomu, že zdroj (or.justice.cz) je důvěryhodný, **reálné riziko nízké**, ale principiálně KRITICKÉ.
+
+**Navržené řešení:**
+- Parametrizovat: `db.da.ExecuteSQL("SELECT * FROM sl_archiv WHERE ic = @ic", new { ic = parsedIc });`
+- Lépe: povýšit do SP `sl_archiv_GetByIc(@ic NVARCHAR(20))`.
+
+---
+
+## Statistika
+
+| Závažnost | open | triaged | in-progress | fixed | wont-fix |
+|---|---|---|---|---|---|
+| 🔴 | 1 | 0 | 1 | 0 | 0 |
+| 🟠 | 1 | 0 | 0 | 0 | 0 |
+| 🟡 | 1 | 1 | 0 | 0 | 0 |
+| 🟢 | 0 | 0 | 0 | 0 | 0 |
+
+## Konvence pro nové záznamy
+
+1. **ID**: `[CONN-NNN]` (Jira/GitHub issue) nebo `[ANOM-NNN]` (lokální, bez ticketu).
+2. **Sekce v detailu**: Závažnost, Status, Aktualizováno, Vlastník, Popis, Místo, Dopad, Reprodukce (SQL/kód), Navržené řešení.
+3. **Status změny**: vždy doplnit datum + jméno do "Aktualizováno".
+4. **Při `fixed`**: zachovat záznam (nesmazat), jen status + odkaz na PR/commit.

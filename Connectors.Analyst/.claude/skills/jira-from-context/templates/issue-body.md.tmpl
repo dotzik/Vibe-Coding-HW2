@@ -1,0 +1,54 @@
+## Popis
+
+{{2-5 vět context — co se děje, kde, proč to vadí. Formální 3. osoba, pasivní rod. Bez "my"/"Josef"/"tým".}}
+
+## Reprodukce
+
+{{Krok-po-kroku nebo SQL dotaz / shell command, který demonstruje problém. Pro refactor proposal: odkaz na current state v scope souborech.}}
+
+```
+{{příklad: SELECT TOP 10 ... FROM ... WHERE ... ;
+ -- Očekáváno: 0 řádků. Reálně: N řádků.}}
+```
+
+## Evidence
+
+- `{{path/to/File.cs:42}}` — {{stručný popis, co tam je}}
+- `{{path/to/Other.cs:120}}` — {{další evidence}}
+- {{Hunter report: `<hunter-name>` Severity=High — `<connector>/...`}}
+- {{Anomaly entry: `[CONN-NNN]` v `<connector>/docs/anomalies.md`}}
+
+### Snippet (nejvíce ilustrativní)
+
+```{{csharp|sql|json}}
+{{10-20 řádků kódu — minimální reprodukční kontext}}
+```
+
+## Návrh řešení
+
+1. **{{Krátkodobě}}** — {{popis kroku 1, ideálně 1-2 věty}}.
+2. **{{Střednědobě / backfill}}** — {{popis kroku 2}}.
+3. **{{Prevence}}** — {{unit test / lint rule / dokumentace}}.
+
+## Acceptance criteria
+
+- [ ] {{kritérium 1 — typicky "SP X opraveno + redeploy + verifikace"}}
+- [ ] {{kritérium 2 — typicky "Backfill skript spuštěn na produkci"}}
+- [ ] {{kritérium 3 — typicky "Test pokrývající scénář přidán"}}
+- [ ] {{kritérium 4 — typicky "Anomaly entry [CONN-NNN] aktualizováno na status `fixed` + PR/commit link"}}
+
+## Související
+
+- **Anomaly entry:** {{[CONN-NNN] v `<connector>/docs/anomalies.md`}}
+- **Hunter report:** {{path nebo "nepřiloženo"}}
+- **Investigation:** {{Tickets/<...>/Plans/investigation.md nebo "—"}}
+- **Refactor proposal:** {{Tickets/<...>/Plans/refactor-proposal-<topic>-<DATE>.md nebo "—"}}
+- **Parent ticket:** {{<KEY> nebo "—"}}
+
+## Labels
+
+`{{anomaly|refactor|bug|security|tech-debt|analysis}}` {{další labels podle projektových konvencí}}
+
+## Priority / Severity
+
+{{🔴 KRITICKÁ → Highest | 🟠 VYSOKÁ → High | 🟡 STŘEDNÍ → Medium | 🟢 NÍZKÁ → Low}}

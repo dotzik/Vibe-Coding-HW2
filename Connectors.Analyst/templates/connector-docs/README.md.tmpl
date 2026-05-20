@@ -1,0 +1,56 @@
+# {{ConnectorName}} — Dokumentace
+
+> Šablona. Nahraď `{{Placeholdery}}` reálnými hodnotami. Smaž tuto poznámku.
+
+## Účel
+
+{{1-2 věty co connector dělá, který registr těží, do kterých DB ukládá}}
+
+## Mapa komponent
+
+```mermaid
+graph TD
+    subgraph "{{ConnectorName}}"
+        Main[Connector<br/>{{TřídaImplementace}}]
+        Parser[{{Parser}}<br/>XML/HTML/PDF]
+        DA[{{DataAccess}}<br/>SP volání]
+    end
+
+    subgraph "Externí"
+        API[{{Registr API/feed}}]
+    end
+
+    subgraph "DB"
+        DB1[({{DB1}})]
+        DB2[({{DB2}})]
+    end
+
+    Main --> Parser
+    Main --> DA
+    Parser --> API
+    DA --> DB1
+    DA --> DB2
+```
+
+## Where to start
+
+| Situace | Otevři |
+|---|---|
+| „Jak funguje hlavní smyčka?" | [`flow.md`](./flow.md) |
+| „Jaké jsou datové objekty a tech stack?" | [`analysis.md`](./analysis.md) |
+| „Které SP connector volá?" | [`stored-procedures.md`](./stored-procedures.md) |
+| „Kompletní DB model — tabulky, FK, indexy" | [`database-model.md`](./database-model.md) |
+| „Známé chyby / ⚠️" | [`anomalies.md`](./anomalies.md) |
+| „Per-ticket investigation" | [`Ana-CONN-NNN/`](./Ana-CONN-NNN/) |
+
+## Rychlý fakt-list
+
+| Co | Hodnota |
+|---|---|
+| .NET target | {{net8.0}} |
+| Bázová třída | {{BaseConnector 1.2.x / vlastní}} |
+| Hlavní DB | {{DB1, DB2}} |
+| Hlavní knihovny | {{HtmlAgilityPack 1.11.x, iTextSharp 5.5.x, atd.}} |
+| Frekvence běhu | {{denně / hodinově / event-driven}} |
+| Vstupní formát | {{XML / HTML / PDF / JSON}} |
+| Poslední velký refactor | {{CONN-NNN, datum}} |

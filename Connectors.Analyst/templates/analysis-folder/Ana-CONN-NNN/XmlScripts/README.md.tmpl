@@ -1,0 +1,38 @@
+# {{[CONN-NNN]}} — XmlScripts
+
+> Python analytické skripty pro analýzu XML/HTML/JSON vstupů a diffů.
+
+## Konvence pojmenování
+
+| Prefix | Účel | Příklad |
+|---|---|---|
+| `01_` | **Basic stats** — počty elementů, histogramy | `01_xml_basic_stats.py` |
+| `02_` | **Diff snapshots** — porovnání 2 XML souborů | `02_xml_diff_snapshots.py` |
+| `03_` | **Verify suspects** — ověření hypotézy proti vzorku | `03_xml_verify_suspects.py` |
+| `04_` | **Specific check** — ad-hoc cílená kontrola | `04_xml_check_druhRozhodnuti.py` |
+
+## Závislosti
+
+```bash
+pip install lxml pandas
+```
+
+## Vstupy
+
+Skripty očekávají vstupní XML/HTML v `../XmlSources/` (relativní cesta).
+
+## Vzor spuštění
+
+```bash
+python 01_xml_basic_stats.py ../XmlSources/PravnickeOsoby.xml > out_01_stats.txt
+python 02_xml_diff_snapshots.py ../XmlSources/PravnickeOsoby.xml ../XmlSources/PravnickeOsoby_13-04-2026.xml > out_02_diff.txt
+```
+
+## Výstupy
+
+Stdout do `out_NN_*.txt`, JSON struktury do `results_NN_*.json`. Commitujte výstupy do repu (jako reprodukovatelný snapshot výsledku investigace).
+
+## Bezpečnost
+
+- Skripty jsou **pure read** vůči XML i DB.
+- Žádné credentials v kódu — pokud potřebuje DB, použij env var `DB_CONNECTION_STRING`.

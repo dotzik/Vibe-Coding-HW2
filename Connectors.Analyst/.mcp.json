@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "connectors": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}/Connectors"]
+    },
+    "libs": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}/Libs"]
+    },
+    "profile": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}/Connectors.Analyst"]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "jira": {
+      "command": "uvx",
+      "args": ["mcp-atlassian"],
+      "env": {
+        "JIRA_URL": "https://your-org.atlassian.net",
+        "JIRA_CLOUD_ID": "${JIRA_CLOUD_ID}",
+        "JIRA_API_TOKEN": "${JIRA_TOKEN}",
+        "JIRA_USERNAME": "${JIRA_USERNAME}"
+      }
+    }
+  }
+}

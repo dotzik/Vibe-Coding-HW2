@@ -1,0 +1,34 @@
+# {{[CONN-NNN]}} — DbScripts
+
+> Reprodukovatelné SQL dotazy použité při investigaci. Každý skript má prefix podle účelu.
+
+## Konvence pojmenování
+
+| Prefix | Účel | Příklad |
+|---|---|---|
+| `S_` | **Sanity check** — ověření základní konzistence | `S_sanity_and_structure.sql` |
+| `B_` | **Bug diagnostics** — reprodukce konkrétní anomálie | `B_zombie_subjects_diagnostics.sql` |
+| `D_` | **Data impact scope** — kolik řádků je postiženo | `D_data_impact_scope.sql` |
+| `F_` | **Fix script** — kandidát na opravný skript | `F_backfill_orphan_vypisy.sql` |
+
+## Přehled skriptů
+
+| Skript | Co dělá | Bezpečné v PROD? |
+|---|---|---|
+| `S_sanity_and_structure.sql` | Ověří existenci tabulek + řádkové počty | ✅ read-only |
+| `B_zombie_subjects_diagnostics.sql` | Najde subjekty bez `last_check` posledních 90 dní | ✅ read-only |
+| `D_data_impact_scope.sql` | Počítá kolik subjektů je postiženo bugem | ✅ read-only |
+| `F_backfill_orphan_vypisy.sql` | Doplní chybějící FK ve `Vypis` tabulce | ⚠️ **MÁ TRANSAKCI**, pusť s ROLLBACK pro DryRun |
+
+## Vzor spuštění
+
+```bash
+# Ze sqlcmd nebo SSMS:
+sqlcmd -S MyServer -d AppDb -i S_sanity_and_structure.sql -o S_sanity_results.txt
+```
+
+## Bezpečnost
+
+- **Žádné `DROP`/`TRUNCATE`** v PROD bez rollbacku.
+- **Fix skripty** (`F_*`) vždy v transakci s explicit `BEGIN TRAN` / `ROLLBACK` na konci pro DryRun.
+- Po validaci replace `ROLLBACK` → `COMMIT` a spustit znovu.

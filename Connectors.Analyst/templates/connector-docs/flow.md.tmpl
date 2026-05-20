@@ -1,0 +1,138 @@
+# {{ConnectorName}} — Procesní flow
+
+> Šablona. Sekce s `{{...}}` vyplnit. Pokud connector nemá alternativní režim, smaž sekci 3.
+
+## 1. Spuštění
+
+```mermaid
+flowchart TD
+    Start([Operátor/Scheduler spustí]) --> LoadConfig[Načti appsettings.json]
+    LoadConfig --> InitDB[Inicializuj DBManager]
+    InitDB --> InitProcess[Vytvoř ProcessInstance]
+    InitProcess --> Run[Run]
+    Run --> End([Stop, log statistiky])
+```
+
+## 2. Hlavní smyčka
+
+```mermaid
+sequenceDiagram
+    participant Conn as {{ConnectorName}}
+    participant DA as {{XDataAccess}}
+    participant API as {{Externí API}}
+    participant Parser as {{Parser}}
+    participant DB as DB
+
+    Conn->>DA: GetPendingTasks()
+    DA->>DB: EXEC tasks_GetPending
+    DB-->>DA: tasks[]
+    DA-->>Conn: tasks[]
+
+    loop pro každý task
+        Conn->>API: Stáhni data
+        API-->>Conn: response
+        Conn->>Parser: Parse(response)
+        Parser-->>Conn: Document
+        Conn->>DA: Save(doc)
+        DA->>DB: EXEC subjects_*, documents_*
+        Conn->>DA: SetTaskStatus(DONE)
+    end
+```
+
+## 3. Alternativní režim — `{{RunOneTransaction()}}` (pokud existuje)
+
+> Vzor: `Connector.SK.FinRed.NespolehlivyPlatce` má `Run()` (default per-task tx) i `RunOneTransaction()` (whole-batch tx). Pokud je v kódu zakomentovaný, **stále ho dokumentuj**.
+
+```mermaid
+sequenceDiagram
+    participant Conn as {{ConnectorName}}
+    participant DA as {{XDataAccess}}
+    participant DB as DB
+
+    Conn->>DA: BeginTransaction()
+    loop pro každý task
+        Conn->>DA: Save(doc, tx)
+        DA->>DB: EXEC ...
+    end
+    alt vše OK
+        Conn->>DA: Commit()
+    else jakákoliv chyba
+        Conn->>DA: Rollback()
+    end
+```
+
+**Kdy použít:** {{malé dávky < 100 dokumentů, kde all-or-nothing dává smysl}}
+
+## 4. Sub-procesy
+
+### 4.1 {{Stahování dat}}
+
+```mermaid
+flowchart TD
+    A[Začátek download] --> B{Task má URL?}
+    B -->|ne| C[Použij default endpoint]
+    B -->|ano| D[Použij URL z tasku]
+    C --> E[HTTP GET přes proxy]
+    D --> E
+    E --> F{Response OK?}
+    F -->|2xx| G[Vrať payload]
+    F -->|5xx| H[Retry s backoff]
+    F -->|4xx| I[FAILED, logni error]
+    H --> J{Limit retry?}
+    J -->|ne| E
+    J -->|ano| I
+```
+
+### 4.2 {{Parsování}}
+
+```mermaid
+flowchart TD
+    {{...}}
+```
+
+### 4.3 {{Uložení}}
+
+```mermaid
+flowchart TD
+    {{...}}
+```
+
+## 5. State machine — {{Document/Task lifecycle}}
+
+```mermaid
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> DOWNLOADING
+    DOWNLOADING --> DOWNLOADED: 2xx
+    DOWNLOADING --> FAILED: 5xx/timeout
+    DOWNLOADED --> PARSED
+    DOWNLOADED --> FAILED: parsing error
+    PARSED --> SAVED
+    PARSED --> FAILED: SP error
+    SAVED --> DONE
+    FAILED --> RETRY: do limitu
+    RETRY --> DOWNLOADING
+    FAILED --> DEAD: limit překročen
+    DONE --> [*]
+    DEAD --> [*]
+```
+
+## 6. Mapování chyb na stavy
+
+| Chyba | Detekce | Cílový stav | Akce |
+|---|---|---|---|
+| HTTP timeout | `TaskCanceledException` | `RETRY` (do max 3) → `DEAD` | Log, čekej `2^n s`, zkus znovu |
+| HTTP 5xx | response.StatusCode | `RETRY` | Stejně jako timeout |
+| HTTP 4xx | response.StatusCode | `FAILED` (final) | Log do `task_errors`, status `FAILED` |
+| Parsing error | `XmlException` / `HtmlException` | `FAILED` | Uložit raw payload do `documents_failed`, log |
+| SP deadlock (1205) | `SqlException.Number == 1205` | `RETRY` (1×) | Counter retry +1 |
+| FK violation (547) | `SqlException.Number == 547` | `FAILED` | Investigovat reference, jiný subjekt? |
+
+## 7. Reference do kódu
+
+| Co | Cesta |
+|---|---|
+| `Run()` metoda | `src/.../{{Connector.cs}}:NN` |
+| Sub-proces stahování | `src/.../{{Downloader.cs}}:NN` |
+| Sub-proces parsování | `src/.../{{Parser.cs}}:NN` |
+| Sub-proces ukládání | `src/.../DataAccess/{{XDA.cs}}:NN` |

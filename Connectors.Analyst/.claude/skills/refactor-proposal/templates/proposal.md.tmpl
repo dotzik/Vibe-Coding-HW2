@@ -1,0 +1,99 @@
+# Refactor proposal — {{topic}}
+
+**Datum:** {{YYYY-MM-DD}}
+**Ticket:** {{CONN-NNN nebo "_drafts (bez tiketu)"}}
+**Scope:** {{absolutní cesta nebo list souborů}}
+**Autor návrhu:** {{jméno autora}}
+
+## Východisko
+
+**Current state:**
+{{2-5 vět popisujících aktuální stav dotčené části kódu — co dělá, jak je strukturováno, jaké má problémy. Reference do kódu `path:line`.}}
+
+**Motivace refactoringu:**
+{{Co se má zlepšit a proč. Odkaz na hunter findings / anomaly entries / business důvod (např. nové requirements).}}
+
+**Související evidence:**
+- {{path/to/hunter-report.md (pokud existuje)}}
+- {{Tickets/CONN-NNN/Plans/investigation.md (pokud existuje)}}
+- {{anomaly entry [CONN-NNN] v `<connector>/docs/anomalies.md` (pokud existuje)}}
+
+---
+
+## Plán změn
+
+### Kosmetic
+
+> Rename, formatting, comment cleanup, dead-code removal. Low risk. Schvalováno **1 batch souhlasem**.
+
+| # | path:line | change | reason |
+|---|---|---|---|
+| K1 | {{path/to/File.cs:42}} | {{Rename _db → _dbManager}} | {{Konzistentnost s konvencí v Libs/DBManager}} |
+| K2 | {{path/to/Other.cs:88-95}} | {{Smazat dead method `OldFoo()`}} | {{dead-code-hunter: 0 callerů, potvrzeno cross-grep}} |
+
+### Structural
+
+> Extract method/class, move type, refactor signature uvnitř modulu. Schvalováno **per-change** (před/po diff).
+
+| # | path:line | change | reason | risk-note |
+|---|---|---|---|---|
+| S1 | {{Connector.X/src/.../FooService.cs:50-120}} | {{Extract `IRedSubjectChecker` interface + implementace `RedSubjectChecker` do samostatného souboru}} | {{Single responsibility — `FooService` dělá 3 věci najednou}} | {{Mid — vyžaduje DI re-wire (případně manual `new` v Program.cs)}} |
+
+### Breaking
+
+> Public API change, signature change v Libs/CoreFramework, SP signature change, DB schema change. Schvalováno **per-change s impact assessmentem + explicit "schvaluji breaking X"**.
+
+| # | path:line | change | reason | risk-note |
+|---|---|---|---|---|
+| B1 | {{Libs/BaseConnector/BaseConnector.cs:42}} | {{Změna signatury `DoWork(int batchSize)` → `DoWork(BatchContext ctx)`}} | {{Předávání více kontextu — batchSize, timestamps, traceId}} | {{HIGH — propaguje do všech connectorů dědících z BaseConnector}} |
+
+---
+
+## Impact assessment (pro Breaking)
+
+> Cross-grep callerů napříč `Connectors/` + `Libs/` + `CoreFramework/`. Pro každou breaking změnu vlastní tabulka.
+
+### B1 — `BaseConnector.DoWork` signature change
+
+| Caller | path:line | typ změny | poznámka |
+|---|---|---|---|
+| {{Connector.X/src/.../Connector.cs:30}} | override `DoWork(int)` | rewrite na `DoWork(BatchContext)` | extract batchSize z ctx |
+| {{Connector.Y/src/.../Connector.cs:45}} | override `DoWork(int)` | rewrite | testy taky |
+| {{Connector.X.Test/.../ConnectorTests.cs:20}} | `.DoWork(10)` | rewrite na `.DoWork(new BatchContext { BatchSize=10 })` | |
+
+**Verifikováno statickým grep + BaseConnector dědicové procvičeni.** Dynamic patterns (reflexe, DI) — manual review.
+
+---
+
+## Aplikace (post-implementační log)
+
+| # | Status | Commit | Poznámka |
+|---|---|---|---|
+| K1 | ⏳ pending | — | |
+| K2 | ⏳ pending | — | |
+| S1 | ⏳ pending | — | |
+| B1 | ⏳ pending | — | |
+
+**Status legenda:** ⏳ pending · 🚧 in-progress · ✅ applied · ⏸️ deferred · ❌ rejected
+
+---
+
+## Rizika & rollback plán
+
+**Hlavní rizika:**
+1. {{Breaking B1 může rozbít connectory, které nejsou v scope aktuální iterace.}}
+2. {{Structural S1 vyžaduje DI re-wire — pokud chybí, runtime NullReferenceException.}}
+
+**Rollback strategie:**
+- {{Granular commits per change → `git revert <hash>` jednotlivě.}}
+- {{Před breaking change tag `pre-refactor-<topic>-<DATE>` pro rychlý fallback.}}
+
+---
+
+## Změny mimo proposal
+
+> Pokud během implementace vyjdou najevo dodatečné změny mimo původní seznam, sem se logují s odůvodněním a per-change schválením. Žádný „silent scope creep".
+
+| # | path:line | change | reason | schváleno |
+|---|---|---|---|---|
+| — | — | — | — | — |
